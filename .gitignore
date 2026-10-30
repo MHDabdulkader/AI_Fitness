@@ -8,6 +8,7 @@ backend/venv/
 .env
 db.sqlite3
 *.log
+backend/staticfiles/
 
 # Node & Next.js
 frontend/node_modules/

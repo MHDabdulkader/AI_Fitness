@@ -62,26 +62,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database configuration: defaults to local SQLite, or uses Cloud PostgreSQL if DATABASE_URL is set
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
+# Database configuration: defaults to local SQLite, or uses Cloud PostgreSQL if valid DATABASE_URL is set
+raw_db_url = os.getenv("DATABASE_URL", "").strip()
+
+DEFAULT_SQLITE = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+VALID_DB_SCHEMES = ("postgres://", "postgresql://", "sqlite://", "mysql://", "cockroach://", "postgis://")
+
+if raw_db_url and any(raw_db_url.startswith(scheme) for scheme in VALID_DB_SCHEMES):
     try:
         import dj_database_url
-        DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
-    except ImportError:
         DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
+            'default': dj_database_url.parse(raw_db_url, conn_max_age=600)
         }
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to parse DATABASE_URL ({e}). Falling back to SQLite.")
+        DATABASES = DEFAULT_SQLITE
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    DATABASES = DEFAULT_SQLITE
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

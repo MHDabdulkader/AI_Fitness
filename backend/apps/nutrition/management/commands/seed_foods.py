@@ -8,11 +8,21 @@ class Command(BaseCommand):
     help = "Seeds database with processed nutrition datasets (McDonald's, Starbucks, Open Food Facts)"
 
     def handle(self, *args, **options):
-        # Locate unified_foods.json in data/processed/ relative to project root
-        json_path = settings.BASE_DIR.parent / "data" / "processed" / "unified_foods.json"
+        # Look in candidate paths
+        candidate_paths = [
+            settings.BASE_DIR / "data" / "processed" / "unified_foods.json",
+            settings.BASE_DIR.parent / "data" / "processed" / "unified_foods.json",
+            Path(__file__).resolve().parent.parent.parent.parent / "data" / "processed" / "unified_foods.json",
+        ]
 
-        if not json_path.exists():
-            self.stdout.write(self.style.ERROR(f"File not found: {json_path}"))
+        json_path = None
+        for p in candidate_paths:
+            if p.exists():
+                json_path = p
+                break
+
+        if not json_path:
+            self.stdout.write(self.style.WARNING("⚠️ Warning: unified_foods.json not found in candidate paths. Skipping food seed."))
             return
 
         with open(json_path, "r", encoding="utf-8") as f:
